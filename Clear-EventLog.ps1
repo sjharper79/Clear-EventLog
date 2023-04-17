@@ -28,15 +28,17 @@ Log file stored in $LogFile\<CurrentDateTime>-Log.txt
 Saved event log file on each computer.
 Cleared event log
 .NOTES
-Version:        2.0
+Version:        2.5
 Author:         Stephen Harper
 Company:        Alpha Omega Integration
 Client:         Department of State A/EX/ITS
 Creation Date:  2/27/2023
+Version Date: 4/17/2023
 Purpose/Change: Initial script development
 ChangeLog:
 1.0 Initial Version
 2.0 Added ability to send emails and output to HTML file.
+2.5 Removed the D drive as a potential target for logs. 
 .EXAMPLE
 Clear-EventLog.ps1 -reboot
 Run the script with the default settings, and reboot each computer. 
@@ -46,7 +48,7 @@ Default settings include:
     * Saving and clearing the Security log
     * Resetting the crashonauditfail registry value
     * Using the computerlist.txt file in the current directory
-    * Using the Q:, D:, and C: drives with the default paths for event logs.
+    * Using the Q: and C: drives with the default paths for event logs.
     * Using the current directory for the script log file.
 
 .EXAMPLE
@@ -172,7 +174,7 @@ function Start-LogCleanupOnComputer ([String]$Computer, [String]$LogType, [Strin
    write-log("`tLogType: $LogType")
    write-log("`tLogExportPath: $LogExportPath`n")
    write-email("<tr><td>$Computer</td><td>$LogType</td>")
-   # We need to know what drives the server has in it. If it has a Q drive, we'll use that. If it doesn't have a Q drive, but it does have a D drive, we'll use that. Otherwise, we'll use the C: drive.
+   # We need to know what drives the server has in it. If it has a Q drive, we'll use that. If it doesn't have a Q drive, we'll use the C: drive.
    $hasQdrive = $false 
    $hasDdrive = $false
    $drives = Invoke-Command -ComputerName $Computer -ScriptBlock { Get-PSDrive -PSProvider FileSystem | Select-Object Name }
@@ -181,7 +183,6 @@ function Start-LogCleanupOnComputer ([String]$Computer, [String]$LogType, [Strin
        write-log("`t$drive")
        switch ($drive){
            'Q' { $hasQdrive = $true }
-           'D' { $hasDdrive = $true }
        }
    }
        
@@ -189,9 +190,6 @@ function Start-LogCleanupOnComputer ([String]$Computer, [String]$LogType, [Strin
    if($LogExportPath -eq "unset"){
        if($hasQdrive -eq $true){
            $LogExportPath="Q:\Windows\System32\winevt\logs\"
-       }
-       elseif($hasDdrive -eq $true){
-           $LogExportPath="D:\Windows\System32\winevt\logs\"
        }
        else{
            $LogExportPath="C:\EventLogs\"
